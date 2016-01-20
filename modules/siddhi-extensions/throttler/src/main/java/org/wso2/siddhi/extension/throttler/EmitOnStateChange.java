@@ -69,19 +69,14 @@ public class EmitOnStateChange extends StreamProcessor {
                            ComplexEventPopulater complexEventPopulater) {
         while (streamEventChunk.hasNext()) {
             StreamEvent event = streamEventChunk.next();
-            streamEventChunk.remove(); //We might have the rest of the events linked to this event forming a chain.    todo: get clarified: Do we need to call this?
-
             String key = (String) event.getAttribute(((VariableExpressionExecutor)attributeExpressionExecutors[0]).getPosition());
             Boolean currentThrottleState = (Boolean) event.getAttribute(((VariableExpressionExecutor)attributeExpressionExecutors[1]).getPosition());
             Boolean lastThrottleState = lastThrottleStateMap.put(key, currentThrottleState);
-            if (lastThrottleState == null) {
-                nextProcessor.process(streamEventChunk);
-            } else {
-                if(lastThrottleState != currentThrottleState) {
-                    nextProcessor.process(streamEventChunk);
-                }
+            if (lastThrottleState == currentThrottleState) {
+                streamEventChunk.remove();
             }
         }
+        nextProcessor.process(streamEventChunk);
     }
 
     @Override
