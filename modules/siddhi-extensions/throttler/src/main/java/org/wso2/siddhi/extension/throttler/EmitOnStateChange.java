@@ -60,20 +60,22 @@ import java.util.Map;
  *
  */
 public class EmitOnStateChange extends StreamProcessor {
-    private ExpressionExecutor[] attributeExpressionExecutors;
-    private Map<String,Boolean> lastThrottleStateMap = new HashMap<String, Boolean>();
+    private VariableExpressionExecutor keyExpressionExecutor;
+    private VariableExpressionExecutor isThrotlledExpressionExecutor;
+    private Map<String,Boolean> throttleStateMap = new HashMap<String, Boolean>();
 
     @Override
     protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
-                           StreamEventCloner streamEventCloner,
-                           ComplexEventPopulater complexEventPopulater) {
+                           StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater) {
         while (streamEventChunk.hasNext()) {
             StreamEvent event = streamEventChunk.next();
-            String key = (String) event.getAttribute(((VariableExpressionExecutor)attributeExpressionExecutors[0]).getPosition());
-            Boolean currentThrottleState = (Boolean) event.getAttribute(((VariableExpressionExecutor)attributeExpressionExecutors[1]).getPosition());
-            Boolean lastThrottleState = lastThrottleStateMap.put(key, currentThrottleState);
+            Boolean currentThrottleState = (Boolean) isThrotlledExpressionExecutor.execute(event);
+            String key = (String) keyExpressionExecutor.execute(event);
+            Boolean lastThrottleState = throttleStateMap.get(key);
             if (lastThrottleState == currentThrottleState) {
                 streamEventChunk.remove();
+            } else {
+                throttleStateMap.put(key, currentThrottleState);
             }
         }
         nextProcessor.process(streamEventChunk);
@@ -95,7 +97,8 @@ public class EmitOnStateChange extends StreamProcessor {
             throw new ExecutionPlanValidationException("Invalid parameter type found for the argument of throttler:emitOnStateChange(key,isThrottled), " +
                                                        "required " + Attribute.Type.BOOL + ", but found " + attributeExpressionExecutors[1].getReturnType());
         }
-        this.attributeExpressionExecutors = attributeExpressionExecutors;
+        keyExpressionExecutor = (VariableExpressionExecutor) attributeExpressionExecutors[0];
+        isThrotlledExpressionExecutor = (VariableExpressionExecutor) attributeExpressionExecutors[1];
         return new ArrayList<Attribute>();    //this does not introduce any additional output attributes, hence returning an empty list.
     }
 
