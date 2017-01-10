@@ -22,12 +22,7 @@ import org.antlr.v4.runtime.misc.NotNull;
 import org.wso2.siddhi.query.api.ExecutionPlan;
 import org.wso2.siddhi.query.api.annotation.Annotation;
 import org.wso2.siddhi.query.api.annotation.Element;
-import org.wso2.siddhi.query.api.definition.Attribute;
-import org.wso2.siddhi.query.api.definition.FunctionDefinition;
-import org.wso2.siddhi.query.api.definition.StreamDefinition;
-import org.wso2.siddhi.query.api.definition.TableDefinition;
-import org.wso2.siddhi.query.api.definition.TriggerDefinition;
-import org.wso2.siddhi.query.api.definition.WindowDefinition;
+import org.wso2.siddhi.query.api.definition.*;
 import org.wso2.siddhi.query.api.execution.ExecutionElement;
 import org.wso2.siddhi.query.api.execution.partition.Partition;
 import org.wso2.siddhi.query.api.execution.partition.PartitionType;
@@ -142,6 +137,9 @@ public class SiddhiQLBaseVisitorImpl extends SiddhiQLBaseVisitor {
         }
         for (SiddhiQLParser.Definition_triggerContext triggerContext : ctx.definition_trigger()) {
             executionPlan.defineTrigger((TriggerDefinition) visit(triggerContext));
+        }
+        for (SiddhiQLParser.Definition_variableContext variableContext: ctx.definition_variable()) {
+            executionPlan.defineVariable((VariableDefinition) visit(variableContext));
         }
         return executionPlan;
     }
@@ -282,6 +280,52 @@ public class SiddhiQLBaseVisitorImpl extends SiddhiQLBaseVisitor {
     public Object visitTrigger_name(@NotNull SiddhiQLParser.Trigger_nameContext ctx) {
         return visitId(ctx.id());
     }
+
+
+    /********=====================================================================================********************/
+
+    /**
+     * {@inheritDoc}
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     *
+     * @param ctx
+     */
+    @Override
+    public Object visitDefinition_variable_final(@NotNull SiddhiQLParser.Definition_variable_finalContext ctx) {
+        return visitDefinition_variable(ctx.definition_variable());
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     *
+     * @param ctx
+     */
+    @Override
+    public Object visitDefinition_variable(@NotNull SiddhiQLParser.Definition_variableContext ctx) {
+        VariableDefinition variableDefinition = new VariableDefinition();
+        variableDefinition.setName((String)visitVariable_name(ctx.variable_name()));
+        variableDefinition.setType((Attribute.Type)visitAttribute_type(ctx.attribute_type()));
+        variableDefinition.setValue(visitConstant_value(ctx.constant_value()));
+        return variableDefinition;
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     *
+     * @param ctx
+     */
+    @Override
+    public Object visitVariable_name(@NotNull SiddhiQLParser.Variable_nameContext ctx) {
+        return visitId(ctx.id());
+    }
+
+
+    /******************=============================================================================*****************/
 
     /**
      * {@inheritDoc}
@@ -478,23 +522,27 @@ public class SiddhiQLBaseVisitorImpl extends SiddhiQLBaseVisitor {
     public Query visitQuery(@NotNull SiddhiQLParser.QueryContext ctx) {
 
 //        query
-//        : annotation* query_input query_section? output_rate? query_output
+//        : annotation* FROM query_input query_section? output_rate? query_output
+//        : annotation* FROM query_input  SET variable_name '=' (variable_name | math_operation)
 //        ;
 
         try {
             Query query = Query.query().from((InputStream) visit(ctx.query_input()));
+            if (ctx.SET() == null) {
+                if (ctx.query_section() != null) {
+                    query.select((Selector) visit(ctx.query_section()));
+                }
+                if (ctx.output_rate() != null) {
+                    query.output((OutputRate) visit(ctx.output_rate()));
+                }
+                query.outStream((OutputStream) visit(ctx.query_output()));
+            } else {
+                String variableName = (String)visit(ctx.variable_name(0));
 
-            if (ctx.query_section() != null) {
-                query.select((Selector) visit(ctx.query_section()));
-            }
-            if (ctx.output_rate() != null) {
-                query.output((OutputRate) visit(ctx.output_rate()));
             }
             for (SiddhiQLParser.AnnotationContext annotationContext : ctx.annotation()) {
                 query.annotation((Annotation) visit(annotationContext));
             }
-            query.outStream((OutputStream) visit(ctx.query_output()));
-
             return query;
 
         } finally {

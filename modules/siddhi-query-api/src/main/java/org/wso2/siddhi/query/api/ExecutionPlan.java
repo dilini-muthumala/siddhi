@@ -39,6 +39,7 @@ public class ExecutionPlan {
     private Map<String, TableDefinition> tableDefinitionMap = new HashMap<String, TableDefinition>();
     private Map<String, WindowDefinition> windowDefinitionMap = new HashMap<String, WindowDefinition>();
     private Map<String, TriggerDefinition> triggerDefinitionMap = new HashMap<String, TriggerDefinition>();
+    private Map<String, VariableDefinition> variableDefinitionMap = new HashMap<String, VariableDefinition>();
     private List<ExecutionElement> executionElementList = new ArrayList<ExecutionElement>();
     private List<String> executionElementNameList = new ArrayList<String>();
     private List<Annotation> annotations = new ArrayList<Annotation>();
@@ -120,6 +121,17 @@ public class ExecutionPlan {
         }
         this.triggerDefinitionMap.put(triggerDefinition.getId(), triggerDefinition);
         this.streamDefinitionMap.put(streamDefinition.getId(), streamDefinition);
+        return this;
+    }
+
+    public ExecutionPlan defineVariable(VariableDefinition variableDefinition) {                //todo: can the variableDefinition be null?
+        String variableName = variableDefinition.getName();
+        if (variableDefinitionMap.containsKey(variableName)) {       //todo: does the tokenizer make sure that variable name won't be null?
+            throw new DuplicateDefinitionException("Variable with same name : '" + variableName + "' exists already.");
+        } else {
+            //todo: are we going to validate whether varible type-value matches at compile time?
+            variableDefinitionMap.put(variableName, variableDefinition);
+        }
         return this;
     }
 

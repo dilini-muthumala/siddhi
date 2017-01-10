@@ -33,9 +33,9 @@ error
 
 execution_plan
     : (plan_annotation|error)*
-      ( (definition_stream|definition_table|definition_trigger|definition_function|definition_window|error) (';' (definition_stream|definition_table|definition_trigger|definition_function|definition_window|error))* ';'?
+      ( (definition_stream|definition_table|definition_trigger|definition_variable|definition_function|definition_window|error) (';' (definition_stream|definition_table|definition_trigger|definition_variable|definition_function|definition_window|error))* ';'?
       || (execution_element|error) (';' (execution_element|error))* ';'?
-      || (definition_stream|definition_table|definition_trigger|definition_function|definition_window|error) (';' (definition_stream|definition_table|definition_trigger|definition_function|definition_window|error))* (';' (execution_element|error))* ';'? )
+      || (definition_stream|definition_table|definition_trigger|definition_variable|definition_function|definition_window|error) (';' (definition_stream|definition_table|definition_trigger|definition_variable|definition_function|definition_window|error))* (';' (execution_element|error))* ';'? )
     ;
 
 execution_element
@@ -98,6 +98,18 @@ trigger_name
     : id
     ;
 
+definition_variable_final
+    : definition_variable ';'? EOF
+    ;
+
+definition_variable
+    : DEFINE VARIABLE attribute_type variable_name '=' constant_value
+    ;
+
+variable_name
+    : id
+    ;
+
 annotation
     : '@' name ('(' annotation_element (',' annotation_element )* ')' )?
     ;
@@ -137,6 +149,11 @@ query_final
 
 query
     : annotation* FROM query_input query_section? output_rate? query_output
+    | annotation* FROM query_input  SET variable_assignment
+    ;
+
+variable_assignment
+    : variable_name '=' (variable_name | math_operation)
     ;
 
 query_input
@@ -593,11 +610,13 @@ STREAM:   S T R E A M;
 DEFINE:   D E F I N E;
 FUNCTION: F U N C T I O N;
 TRIGGER:  T R I G G E R;
+VARIABLE: V A R I A B L E;
 TABLE:    T A B L E;
 PLAN:     P L A N;
 FROM:     F R O M;
 PARTITION:    P A R T I T I O N; 
 WINDOW:   W I N D O W;
+SET:      S E T;
 SELECT:   S E L E C T;
 GROUP:    G R O U P;
 BY:       B Y;

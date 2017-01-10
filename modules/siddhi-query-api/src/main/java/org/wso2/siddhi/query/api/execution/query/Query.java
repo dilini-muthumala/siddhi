@@ -34,6 +34,7 @@ public class Query implements ExecutionElement {
     private Selector selector = new Selector();
     private OutputStream outputStream = new ReturnStream();
     private OutputRate outputRate;
+    private
     private List<Annotation> annotations = new ArrayList<Annotation>();
 
     public static Query query() {

@@ -72,7 +72,7 @@
                             <goal>antlr4</goal>
                         </goals>
                         <configuration>
-                            <!--<sourceDirectory>${antlr.dir}</sourceDirectory>-->
+                            <sourceDirectory>${antlr.dir}</sourceDirectory>
                             <listener>false</listener>
                             <visitor>true</visitor>
                         </configuration>
